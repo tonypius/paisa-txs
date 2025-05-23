@@ -46,9 +46,16 @@ const (
 	No  BoolType = "no"
 )
 
+type ImportRule struct {
+	Condition string   `json:"condition" yaml:"condition"`
+	Tags      []string `json:"tags" yaml:"tags"`
+	Skip      bool     `json:"skip" yaml:"skip"`
+}
+
 type ImportTemplate struct {
-	Name    string `json:"name" yaml:"name"`
-	Content string `json:"content" yaml:"content"`
+	Name    string       `json:"name" yaml:"name"`
+	Content string       `json:"content" yaml:"content"`
+	Rules   []ImportRule `json:"rules" yaml:"rules"`
 }
 
 type Price struct {

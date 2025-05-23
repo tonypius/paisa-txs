@@ -21,10 +21,17 @@ const (
 	Custom  TemplateType = "custom"
 )
 
+type Rule struct {
+	Condition string   `json:"condition"`
+	Tags      []string `json:"tags"`
+	Skip      bool     `json:"skip"`
+}
+
 type Template struct {
 	ID           string       `json:"id"`
 	Name         string       `json:"name"`
 	Content      string       `json:"content"`
+	Rules        []Rule       `json:"rules"`
 	TemplateType TemplateType `json:"template_type"`
 }
 
@@ -32,7 +39,22 @@ func All() []Template {
 	var templates []Template
 
 	for _, t := range config.GetConfig().ImportTemplates {
-		template := Template{ID: buildID(t.Name, Custom), Name: t.Name, Content: t.Content, TemplateType: Custom}
+		// Convert config.ImportRule to template.Rule
+		var rules []Rule
+		for _, r := range t.Rules {
+			rules = append(rules, Rule{
+				Condition: r.Condition,
+				Tags:      r.Tags,
+				Skip:      r.Skip,
+			})
+		}
+		template := Template{
+			ID:           buildID(t.Name, Custom),
+			Name:         t.Name,
+			Content:      t.Content,
+			Rules:        rules,
+			TemplateType: Custom,
+		}
 		templates = append(templates, template)
 	}
 
@@ -48,15 +70,15 @@ func All() []Template {
 		}
 
 		name = strings.TrimSuffix(name, filepath.Ext(name))
-		template := Template{ID: buildID(name, Builtin), Name: name, Content: string(content), TemplateType: Builtin}
+		template := Template{ID: buildID(name, Builtin), Name: name, Content: string(content), Rules: []Rule{}, TemplateType: Builtin}
 		templates = append(templates, template)
 	}
 
 	return templates
 }
 
-func Upsert(name string, content string) Template {
-	template := Template{ID: buildID(name, Custom), Name: name, Content: content, TemplateType: Custom}
+func Upsert(name string, content string, rules []Rule) Template {
+	template := Template{ID: buildID(name, Custom), Name: name, Content: content, Rules: rules, TemplateType: Custom}
 
 	if config.GetConfig().Readonly {
 		return template
@@ -64,7 +86,23 @@ func Upsert(name string, content string) Template {
 
 	Delete(name)
 	cfg := config.GetConfig()
-	cfg.ImportTemplates = append(cfg.ImportTemplates, config.ImportTemplate{Name: name, Content: content})
+	
+	// Convert template.Rule to config.ImportRule
+	var configRules []config.ImportRule
+	for _, r := range rules {
+		configRules = append(configRules, config.ImportRule{
+			Condition: r.Condition,
+			Tags:      r.Tags,
+			Skip:      r.Skip,
+		})
+	}
+	
+	cfg.ImportTemplates = append(cfg.ImportTemplates, config.ImportTemplate{
+		Name:    name,
+		Content: content,
+		Rules:   configRules,
+	})
+	
 	err := config.SaveConfigObject(cfg)
 	if err != nil {
 		log.Fatal(err)
