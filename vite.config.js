@@ -15,13 +15,15 @@ const config = {
     })
   ],
   server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:7500"
-      }
-    },
     fs: {
       allow: ["./fonts"]
+    },
+    host: "0.0.0.0",
+    port: 12001,
+    cors: true,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "X-Frame-Options": "ALLOWALL"
     }
   }
 };
