@@ -340,7 +340,7 @@ func Build(db *gorm.DB, enableCompression bool) *gin.Engine {
 			return
 		}
 
-		c.JSON(200, gin.H{"template": template.Upsert(t.Name, t.Content), "saved": true})
+		c.JSON(200, gin.H{"template": template.Upsert(t.Name, t.Content, t.Rules), "saved": true})
 	})
 
 	router.POST("/api/templates/delete", func(c *gin.Context) {

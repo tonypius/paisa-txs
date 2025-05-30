@@ -44,18 +44,77 @@ const COLUMN_REFS = _.chain(_.range(65, 90))
 export function render(
   rows: Array<Record<string, any>>,
   template: Handlebars.TemplateDelegate,
-  options: { reverse?: boolean; trim?: boolean } = {}
+  options: { 
+    reverse?: boolean; 
+    trim?: boolean;
+    rules?: Array<{
+      condition: string;
+      tags: string[];
+      skip: boolean;
+    }>;
+  } = {}
 ) {
   const output: string[] = [];
   _.each(rows, (row) => {
-    let rendered = template(_.assign({ ROW: row, SHEET: rows }, COLUMN_REFS));
+    // Apply rules if they exist
+    let skip = false;
+    let tags: string[] = [];
+    
+    if (options.rules && options.rules.length > 0) {
+      for (const rule of options.rules) {
+        try {
+          // Create a function from the condition string
+          const conditionFn = new Function('ROW', 'SHEET', 'COLUMN_REFS', `return ${rule.condition};`);
+          
+          // Evaluate the condition
+          const result = conditionFn(row, rows, COLUMN_REFS);
+          
+          if (result) {
+            // If the rule matches and is set to skip, mark for skipping
+            if (rule.skip) {
+              skip = true;
+              break;
+            }
+            
+            // Add tags from the rule
+            if (rule.tags && rule.tags.length > 0) {
+              tags = [...tags, ...rule.tags];
+            }
+          }
+        } catch (e) {
+          console.error("Error evaluating rule condition:", e);
+        }
+      }
+    }
+    
+    // Skip this row if a rule marked it for skipping
+    if (skip) {
+      return;
+    }
+    
+    let rendered = template(_.assign({ ROW: row, SHEET: rows, TAGS: tags }, COLUMN_REFS));
+    
     if (options.trim) {
       rendered = _.trim(rendered);
     }
+    
+    // Add tags to the transaction if any were applied
+    if (tags.length > 0 && !_.isEmpty(rendered)) {
+      // Find the first line (transaction line)
+      const lines = rendered.split('\n');
+      if (lines.length > 0) {
+        // Add tags to the first line
+        const tagString = tags.map(tag => `#${tag}`).join(' ');
+        lines[0] = `${lines[0]} ${tagString}`;
+        rendered = lines.join('\n');
+      }
+    }
+    
     if (!_.isEmpty(rendered)) {
       output.push(rendered);
     }
   });
+  
   if (options.reverse) {
     output.reverse();
   }
