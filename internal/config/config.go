@@ -125,6 +125,11 @@ type CreditCard struct {
 	ExpirationDate  string `json:"expiration_date" yaml:"expiration_date"`
 }
 
+type RulesTxs struct {
+	AccountName  string `json:"account_name" yaml:"account_name"`
+	RegexRules      string `json:"regex_rule" yaml:"regex_rule"`
+}
+
 type Config struct {
 	JournalPath                string       `json:"journal_path" yaml:"journal_path"`
 	DBPath                     string       `json:"db_path" yaml:"db_path"`
@@ -157,6 +162,8 @@ type Config struct {
 	UserAccounts []UserAccount `json:"user_accounts" yaml:"user_accounts"`
 
 	CreditCards []CreditCard `json:"credit_cards" yaml:"credit_cards"`
+
+	AllRulesTxs []RulesTxs `json:"rules_txs" yaml:"rules_txs"`
 }
 
 var config Config
@@ -183,6 +190,7 @@ var defaultConfig = Config{
 	Goals:                      Goals{Retirement: []RetirementGoal{}, Savings: []SavingsGoal{}},
 	UserAccounts:               []UserAccount{},
 	CreditCards:                []CreditCard{},
+	AllRulesTxs:                []RulesTxs{},
 }
 
 var itemsUniquePropertiesMeta = jsonschema.MustCompileString("itemsUniqueProperties.json", `{

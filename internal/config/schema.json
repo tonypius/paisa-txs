@@ -1125,6 +1125,32 @@
         ],
         "additionalProperties": false
       }
+    },
+    "rules_txs": {
+      "type": "array",
+      "itemsUniqueProperties": ["regex_rule"],
+      "default": [
+        {
+          "account_name": "Expenses:General",
+          "regex_rule": "^EXP.*"
+        }
+      ],
+      "items": {
+        "type": "object",
+        "ui:header": "account_name",
+        "properties": {
+          "account_name": {
+            "type": "string",
+            "description": "Account name associated with the rule"
+          },
+          "regex_rule": {
+            "type": "string",
+            "description": "Regular expression pattern for the rule"
+          }
+        },
+        "required": ["account_name", "regex_rule"],
+        "additionalProperties": false
+      }
     }
   },
   "required": ["journal_path", "db_path"],

@@ -95,6 +95,31 @@ function parseAmount(str: string | number) {
   }
 }
 
+function getRules(options: any) {
+  const { success, message } = ajax("/api/config", {
+    method: "GET",
+    // Removed body for GET request
+  });
+  
+  if (!success) {
+    throw new Error(`Failed to fetch rules: ${message}`);
+  }
+
+  // Updated to retrieve 'rules_txs' from the message
+  const rulesTxs = message.rules_txs || [];
+  const rule = rulesTxs.find(r => r.regex_rule === options.hash.rule);
+  if (!rule) {
+    throw new Error(`Rule not found: ${options.hash.rule}`);
+  }
+  return rule;
+}
+
+function matchUsingGetRules(query: string, options: any) {
+  const rule = getRules(options);
+  const regexPatterns = rule.regexPatterns || [];
+  return regexPatterns.find(({ pattern }) => pattern.test(query));
+}
+
 export default {
   eq: (a: any, b: any) => a === b,
   ne: (a: any, b: any) => a !== b,
@@ -147,6 +172,37 @@ export default {
     const match = _.find(matches, ([account]) => account.toString().startsWith(prefix));
     if (match) {
       return match[0];
+    }
+    if (prefix.endsWith(":")) {
+      return prefix + "Unknown";
+    } else {
+      return prefix + ":Unknown";
+    }
+  },
+  predictAccountWithRegex(...args: any) {
+    const options = args.pop();
+
+    let query: string;
+    if (args.length === 0) {
+      query = Object.values(options.data.root.ROW).join(" ");
+    } else {
+      query = _.chain(args)
+        .map((a) => {
+          if (_.isObject(a)) {
+            return Object.values(a);
+          }
+          return a;
+        })
+        .flattenDeep()
+        .value()
+        .join(" ");
+    }
+  
+    const prefix: string = options.hash.prefix || "";
+  
+    const match = matchUsingGetRules(query, options);
+    if (match) {
+      return match.account;
     }
     if (prefix.endsWith(":")) {
       return prefix + "Unknown";
